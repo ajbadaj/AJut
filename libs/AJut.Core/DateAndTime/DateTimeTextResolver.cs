@@ -1,13 +1,16 @@
-namespace AJut.UX.Controls
+// AJut.Core leaves nullable reference types off, and this code is written with them on
+#nullable enable
+
+namespace AJut.DateAndTime
 {
     using System;
     using System.Collections.Generic;
     using System.Globalization;
 
     // ===========[ DateTimeTextResolver ]=======================================
-    // What a DateTimeEditIngressControl reads typed text with when it is given no resolver of its own. Text is tried
-    // three ways, and the first that reads it wins:
-    //  1. The control's display format, exactly, so the text the control showed always reads back as the same value
+    // The resolver typed text is read with when no other is given, as it is by every DateTimeEditIngressControl given none.
+    // Text is tried three ways, and the first that reads it wins:
+    //  1. The display format, exactly, so text shown in it always reads back as the same value
     //  2. Phrases, in English whatever the culture, all counted from the context's Now:
     //       now, today, tomorrow, yesterday
     //       friday, this friday       the first Friday after today
@@ -20,11 +23,11 @@ namespace AJut.UX.Controls
     //     alone ("3pm", "noon") is today at that time.
     //  3. Whatever the culture, and then the invariant culture, reads as a date and time (2026-11-25, 11/25/2026, Nov 25)
     //
-    // A phrase with no time of day in it keeps the time the control already holds, so "tomorrow" moves a date and time
-    // a day on rather than to midnight.
+    // A phrase with no time of day in it keeps the time of the value already held, so "tomorrow" moves a date and time a
+    // day on rather than to midnight.
     /// <summary>
-    /// The resolver a DateTimeEditIngressControl uses when it is given none: it reads the control's own display format,
-    /// plain phrases such as "in two weeks", "friday" and "+3d", and anything the culture reads as a date and time
+    /// The resolver used when no other is given: it reads the display format, plain phrases such as "in two weeks",
+    /// "friday", and "+3d", and anything the culture reads as a date and time
     /// </summary>
     public class DateTimeTextResolver : IDateTimeTextResolver
     {
@@ -68,7 +71,7 @@ namespace AJut.UX.Controls
         };
 
         // ===========[ Properties ]============================================
-        /// <summary>The one a control uses when it is given no resolver, and the one to fall back to from another</summary>
+        /// <summary>The one used when no other resolver is given, and the one to fall back to from another</summary>
         public static DateTimeTextResolver Default { get; } = new DateTimeTextResolver();
 
         // ===========[ IDateTimeTextResolver Implementations ]=================
@@ -81,7 +84,7 @@ namespace AJut.UX.Controls
                 return DateTimeTextResolution.Resolved(null);
             }
 
-            // 1. The display format, so what the control showed reads back as what it was
+            // 1. The display format, so what was shown reads back as what it was
             if (TryParseDisplayFormat(trimmed, context, out DateTime exact))
             {
                 return DateTimeTextResolution.Resolved(exact);
@@ -133,7 +136,7 @@ namespace AJut.UX.Controls
 
         // ===========[ Public Interface Methods ]==============================
         /// <summary>
-        /// The format a value is shown in when a control is given none: the culture's short date, its short time, or both.
+        /// The format a value is shown in when no display format is given: the culture's short date, its short time, or both.
         /// A time on a clock other than the culture's (<see cref="DateTimeTextContext.TimeFormat"/>) takes the culture's
         /// short time moved to that clock, as <see cref="TimeOfDayRules.GetShortTimePattern"/> gives it.
         /// </summary>
@@ -216,8 +219,8 @@ namespace AJut.UX.Controls
                 return false;
             }
 
-            // 3. The time of day: the one given, the one the phrase works out to ("now", "+4h"), or else the one the
-            //    control already holds
+            // 3. The time of day: the one given, the one the phrase works out to ("now", "+4h"), or else the time of the
+            //    value already held
             if (timeOfDay != null)
             {
                 resolved = day.Date + timeOfDay.Value;

@@ -1,20 +1,24 @@
-namespace AJut.UX.Controls
+// AJut.Core leaves nullable reference types off, and this code is written with them on
+#nullable enable
+
+namespace AJut.DateAndTime
 {
     using System;
 
     // ===========[ DateTimeEditRules ]==========================================
-    // What every stack's DateTimeEditIngressControl decides, with no toolkit in it: what typed text comes to, the text a
-    // value is shown as, and what a date or a time of day chosen in a picker does to the value already held. Each
-    // control only shows the result and hosts the pickers, so the same text gets the same value on every stack.
+    // How typed text and picker choices become a date and time value: what typed text comes to, the text a value is
+    // shown as, and what a date or a time of day chosen in a picker does to the value already held. Every stack's
+    // DateTimeEditIngressControl settles its value here, then only shows the result and hosts the pickers, so the same
+    // text gets the same value on every stack, and anything else that reads a typed date gets it too.
     //
     // Typed text is settled in this order:
     //  1. Empty text is no value, which is fine unless empty is to be treated as invalid
-    //  2. The resolver reads it: the control's own, or DateTimeTextResolver.Default when it has none
-    //  3. What it read is shaped to what the control edits: a date only control drops the time of day, and a time only
-    //     control keeps the date it already holds (today when it holds none)
+    //  2. The resolver reads it: the one given, or DateTimeTextResolver.Default when there is none
+    //  3. What it read is shaped to what is edited: a date only edit drops the time of day, and a time only edit keeps
+    //     the date already held (today when there is none)
     /// <summary>
-    /// The rules every stack's DateTimeEditIngressControl follows to turn typed text and picker choices into its value,
-    /// toolkit free so each one gives the same answer
+    /// The rules that turn typed text and picker choices into a date and time value, the same for every stack's
+    /// DateTimeEditIngressControl and for anything else that reads a typed date
     /// </summary>
     public static class DateTimeEditRules
     {
@@ -22,12 +26,11 @@ namespace AJut.UX.Controls
 
         // ===========[ Public Interface Methods ]==============================
         /// <summary>
-        /// Settles <paramref name="text"/> as a DateTimeEditIngressControl's typed text: whether it can be used (and if
-        /// not, why not), and the value it comes to
+        /// Settles typed <paramref name="text"/>: whether it can be used (and if not, why not), and the value it comes to
         /// </summary>
         /// <param name="text">The text, as the user typed it</param>
-        /// <param name="resolver">The control's resolver, or null for <see cref="DateTimeTextResolver.Default"/></param>
-        /// <param name="context">What the control edits, the value it holds, and the moment relative text counts from</param>
+        /// <param name="resolver">The resolver to read it with, or null for <see cref="DateTimeTextResolver.Default"/></param>
+        /// <param name="context">What is edited, the value held, and the moment relative text counts from</param>
         /// <param name="treatEmptyAsInvalid">Whether empty text is invalid rather than just no value</param>
         public static Evaluation Evaluate (string? text, IDateTimeTextResolver? resolver, DateTimeTextContext context, bool treatEmptyAsInvalid)
         {
@@ -51,7 +54,7 @@ namespace AJut.UX.Controls
             return new Evaluation(IsTextValid: true, Value: ShapeToWhatIsEdited(resolution.Value.Value, context), InvalidTextReason: null);
         }
 
-        /// <summary>The text a control shows for <paramref name="value"/>, from its resolver or the default one</summary>
+        /// <summary>The text <paramref name="value"/> is shown as, from <paramref name="resolver"/> or the default one</summary>
         public static string Format (DateTime? value, IDateTimeTextResolver? resolver, DateTimeTextContext context)
         {
             return (resolver ?? DateTimeTextResolver.Default).Format(value, context) ?? String.Empty;

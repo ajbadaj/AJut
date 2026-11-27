@@ -1,4 +1,7 @@
-namespace AJut.UX.Controls
+// AJut.Core leaves nullable reference types off, and this code is written with them on
+#nullable enable
+
+namespace AJut.DateAndTime
 {
     using System;
     using System.Globalization;
@@ -6,9 +9,11 @@ namespace AJut.UX.Controls
     // ===========[ CalendarMonthGrid ]==========================================
     // The days a month calendar shows for one month: six weeks of seven days, starting on the week's first day, with the
     // end of the month before and the start of the month after filling the rows the month doesn't. Six rows whatever the
-    // month, so a calendar keeps its height as the months go by. A stack with no calendar of its own (WPF) draws one
-    // from this.
-    /// <summary>The six weeks of days a month calendar shows for a month, for a stack that draws its own calendar</summary>
+    // month, so a calendar keeps its height as the months go by. Anything that draws a month calendar, on a screen or as
+    // text, can lay it out from this, as WPF's DateValueEditControl does.
+    /// <summary>
+    /// The six weeks of days a month calendar shows for a month, and the day and month names it shows them under
+    /// </summary>
     public static class CalendarMonthGrid
     {
         /// <summary>How many days a week has, and so how many columns the calendar has</summary>

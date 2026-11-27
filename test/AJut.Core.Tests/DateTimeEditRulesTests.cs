@@ -1,13 +1,13 @@
-namespace AJut.UX.Tests
+namespace AJut.Core.UnitTests
 {
     using System;
     using System.Globalization;
-    using AJut.UX.Controls;
+    using AJut.DateAndTime;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
-    /// What every stack's DateTimeEditIngressControl decides through <see cref="DateTimeEditRules"/> and draws its
-    /// calendar from with <see cref="CalendarMonthGrid"/>
+    /// What typed text and picker choices come to through <see cref="DateTimeEditRules"/>, the month a calendar lays out
+    /// with <see cref="CalendarMonthGrid"/>, and the clock arithmetic in <see cref="TimeOfDayRules"/>
     /// </summary>
     [TestClass]
     public class DateTimeEditRulesTests

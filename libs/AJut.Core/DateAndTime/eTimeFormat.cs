@@ -1,8 +1,8 @@
-namespace AJut.UX.Controls
+namespace AJut.DateAndTime
 {
     /// <summary>
-    /// Which clock a time of day is shown and picked on: the culture's own, or one chosen whatever the culture. It sets
-    /// the shown text when no display format is given, and the time picker either way.
+    /// Which clock a time of day is shown on: the culture's own, or one chosen whatever the culture.
+    /// <see cref="TimeOfDayRules.GetShortTimePattern"/> gives the short time pattern each one comes to in a culture.
     /// </summary>
     public enum eTimeFormat
     {
