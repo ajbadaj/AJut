@@ -279,6 +279,36 @@
         }
 
         [TestMethod]
+        public async Task ThreadWorker_LoopStopsWithInputQueued_TheWaitForAllInputFinishes ()
+        {
+            const int kGenerousLimitSeconds = 30;
+            var bkg = new ThreadWorker<int, int>();
+            bkg.StartThreadLoop(_LeaveInputQueued);
+            bkg.InputToProcess.Add(1);
+            Task allProcessed = bkg.WhenAllInputProcessingCompleted();
+
+            Task stopped = WhenStopped(bkg);
+            bkg.InitiateGracefulShutdown();
+            await stopped;
+
+            // Stopping clears the queue, so the wait has nothing left to wait for. The limit only turns a wait that is never
+            //  told into a failure instead of a hang; a slow machine is nowhere near it.
+            Task finishedFirst = await Task.WhenAny(
+                allProcessed,
+                Task.Delay(TimeSpan.FromSeconds(kGenerousLimitSeconds))
+            );
+            Assert.AreSame(
+                allProcessed,
+                finishedFirst,
+                "The wait for all input never finished after the loop stopped"
+            );
+
+            static void _LeaveInputQueued (ThreadWorkerDataTracker<int, TNone, int> data)
+            {
+            }
+        }
+
+        [TestMethod]
         public void ThreadWorkerDataQueue_Add_RaisesDataReceivedOncePerAdd ()
         {
             int receivedCount = 0;
