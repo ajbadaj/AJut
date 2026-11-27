@@ -8,13 +8,14 @@ namespace AJut.DateAndTime
     using System.Text;
 
     // ===========[ TimeOfDayRules ]=============================================
-    // The arithmetic behind a time of day editor that steps its hour and minute with buttons: how a time reads on a
-    // twelve hour clock, where a step up or down lands, and what an hour or a minute typed over the one shown comes to.
-    // Every step stays inside the one day, and a step of the minute either stays inside the hour, as a spinner's does,
-    // or carries into the hour, as a clock does. A stack with no time picker of its own (WPF) builds one on this.
+    // The arithmetic of a time of day on a clock: which clock a culture or an eTimeFormat shows it on, and the short
+    // time pattern for that clock; how a time reads on a twelve hour clock; where a step of its hour or minute lands;
+    // and what an hour or a minute typed over the one shown comes to. Every step stays inside the one day, and a step of
+    // the minute either stays inside the hour, as a spinner's does, or carries into the hour, as a clock does. A time
+    // editor that steps its hour and minute with buttons builds on this, as WPF's TimeValueEditControl does.
     /// <summary>
-    /// How a time of day reads on a clock, where stepping its hour or minute lands, and what a typed hour or minute comes
-    /// to, for a stack that draws its own time editor
+    /// Which clock a time of day is shown on, how it reads there, where stepping its hour or minute lands, and what a
+    /// typed hour or minute comes to
     /// </summary>
     public static class TimeOfDayRules
     {
