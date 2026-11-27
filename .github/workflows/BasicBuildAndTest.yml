@@ -17,12 +17,12 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v7
 
-    # The libraries target .NET 10, but with no global.json the newest SDK on the runner image does the building, which
-    #  can be a later major version than the one installed here
+    # global.json pins the .NET 10 SDK, since otherwise the newest SDK on the runner image does the building, and that
+    #  can be a later major version. setup-dotnet reads the same file and installs the newest 10.0 SDK the pin allows.
     - name: Setup .NET
       uses: actions/setup-dotnet@v6
       with:
-        dotnet-version: '10.0.x'
+        global-json-file: global.json
 
     # AJut.Core.Tests, AJut.UX.Tests and AJut.UX.Wpf.Tests build AnyCPU as x86 on Windows, so their test hosts need x86
     #  .NET runtimes, and setup-dotnet installed only x64. This installs just the runtimes, in a folder of their own.

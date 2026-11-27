@@ -28,6 +28,7 @@
 !*.appxmanifest
 !launchSettings.json
 !ProjectOrder.json
+!/global.json
 !*.pubxml
 !*.ps1
 !*.targets
