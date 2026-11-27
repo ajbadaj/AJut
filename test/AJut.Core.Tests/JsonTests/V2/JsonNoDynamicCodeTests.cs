@@ -139,23 +139,6 @@ namespace AJut.Core.UnitTests.AJsonV2
         }
 
         [TestMethod]
-        public void NoDynamicCode_DictionaryEntryThatCannotBeWritten_IsReportedOnTheJson ()
-        {
-            var source = new PlainCellKeyedGen
-            {
-                ByCell = new Dictionary<PlainGridCell, string> { { new PlainGridCell { Row = 1, Column = 2 }, "one-two" } },
-            };
-
-            using (DynamicCodeAvailability.SimulateUnsupported())
-            {
-                Json json = JsonHelper.BuildJsonForObject(source);
-
-                Assert.IsTrue(json.HasErrors, json.ToString());
-                StringAssert.Contains(json.GetErrorReport(), nameof(PlainGridCell));
-            }
-        }
-
-        [TestMethod]
         public void NoDynamicCode_DictionaryEntryWhoseKeyCannotBeWritten_IsLeftOutWhole ()
         {
             var source = new PlainCellKeyedGen

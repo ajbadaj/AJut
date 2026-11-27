@@ -187,7 +187,7 @@ namespace AJut.Core.UnitTests.AJsonV2
 
         // ===========================[ Warning ]===================================
         [TestMethod]
-        public void Warn_OffByDefault ()
+        public void Warn_GlobalZero_UnmarkedText_DoesNotLog ()
         {
             JsonHelper.ParseText("{ \"a\": 1 }");
             Assert.AreEqual(0, this.WarningCount());

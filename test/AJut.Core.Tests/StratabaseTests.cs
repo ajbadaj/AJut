@@ -4,7 +4,6 @@ namespace AJut.Core.UnitTests
     using System.Collections;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
     using AJut.Storage;
@@ -257,124 +256,6 @@ namespace AJut.Core.UnitTests
             Assert.AreEqual(thing.Other.IndexedItems[2], intValues[2].GetValue());
             Assert.AreEqual(thing.Other.IndexedItems[3], intValues[3].GetValue());
         }
-
-#if false
-        [TestMethod]
-        public void Stratabase_List_AddRemove_AccessCreatedLaterTracksCountProperly ()
-        {
-            const string kPropertyName = "List";
-            Stratabase sb = new Stratabase(0);
-            var id = Guid.NewGuid();
-            var adder = sb.GenerateListPropertyAccess<char>(id, kPropertyName);
-            Assert.AreEqual(0, adder.GetCount());
-            adder.CreateAdd('A', 'B', 'C', 'D').StoreInBaseline();
-            Assert.AreEqual(4, adder.GetCount());
-
-            var list = sb.GenerateListPropertyAccess<char>(id, kPropertyName);
-            Assert.AreEqual(4, list.GetCount());
-
-            adder.CreateAdd('E').StoreInBaseline();
-            Assert.AreEqual(5, list.GetCount());
-        }
-
-        [TestMethod]
-        public void Stratabase_List_AddRemoveBaseline ()
-        {
-            const string kPropertyName = "List";
-            Stratabase sb = new Stratabase(0);
-            var id = Guid.NewGuid();
-            var list = sb.GenerateListPropertyAccess<char>(id, kPropertyName);
-            Assert.AreEqual(0, list.GetCount());
-
-            list.CreateAdd('A', 'B', 'C', 'D').StoreInBaseline();
-            Assert.AreEqual(4, list.GetCount());
-
-            Assert.AreEqual('A', list.GetElementAt(0));
-            Assert.AreEqual('B', list.GetElementAt(1));
-            Assert.AreEqual('C', list.GetElementAt(2));
-            Assert.AreEqual('D', list.GetElementAt(3));
-
-            // Add to baseline
-            list.CreateAdd('E').StoreInBaseline();
-
-            Assert.AreEqual(5, list.GetCount());
-            Assert.AreEqual('A', list.GetElementAt(0));
-            Assert.AreEqual('B', list.GetElementAt(1));
-            Assert.AreEqual('C', list.GetElementAt(2));
-            Assert.AreEqual('D', list.GetElementAt(3));
-            Assert.AreEqual('E', list.GetElementAt(4));
-
-            // Insert into baseline
-            list.CreateInsert(2, 'X').StoreInBaseline();
-
-            Assert.AreEqual(6, list.GetCount());
-            Assert.AreEqual('A', list.GetElementAt(0));
-            Assert.AreEqual('B', list.GetElementAt(1));
-            Assert.AreEqual('X', list.GetElementAt(2));
-            Assert.AreEqual('C', list.GetElementAt(3));
-            Assert.AreEqual('D', list.GetElementAt(4));
-            Assert.AreEqual('E', list.GetElementAt(5));
-
-            // Remove from baseline
-            list.RemoveAt(2);
-            Assert.AreEqual(5, list.GetCount());
-
-            Assert.AreEqual('A', list.GetElementAt(0));
-            Assert.AreEqual('B', list.GetElementAt(1));
-            Assert.AreEqual('C', list.GetElementAt(2));
-            Assert.AreEqual('D', list.GetElementAt(3));
-            Assert.AreEqual('E', list.GetElementAt(4));
-        }
-
-        [TestMethod]
-        public void Stratabase_List_AddRemoveBaselineAndOverride ()
-        {
-            const string kPropertyName = "List";
-            Stratabase sb = new Stratabase(2);
-            var id = Guid.NewGuid();
-            var list = sb.GenerateListPropertyAccess<char>(id, kPropertyName);
-            Assert.AreEqual(0, list.GetCount());
-
-            list.CreateAdd('A', 'B', 'C', 'D').StoreInBaseline();
-            Assert.AreEqual(4, list.GetCount());
-
-            Assert.AreEqual('A', list.GetElementAt(0));
-            Assert.AreEqual('B', list.GetElementAt(1));
-            Assert.AreEqual('C', list.GetElementAt(2));
-            Assert.AreEqual('D', list.GetElementAt(3));
-
-            // Add to baseline
-            list.CreateAdd('E').StoreInBaseline();
-
-            Assert.AreEqual(5, list.GetCount());
-            Assert.AreEqual('A', list.GetElementAt(0));
-            Assert.AreEqual('B', list.GetElementAt(1));
-            Assert.AreEqual('C', list.GetElementAt(2));
-            Assert.AreEqual('D', list.GetElementAt(3));
-            Assert.AreEqual('E', list.GetElementAt(4));
-
-            // Insert into baseline
-            list.CreateInsert(2, 'X').StoreInOverrideLayer(1);
-
-            Assert.AreEqual(6, list.GetCount());
-            Assert.AreEqual('A', list.GetElementAt(0));
-            Assert.AreEqual('B', list.GetElementAt(1));
-            Assert.AreEqual('X', list.GetElementAt(2));
-            Assert.AreEqual('C', list.GetElementAt(3));
-            Assert.AreEqual('D', list.GetElementAt(4));
-            Assert.AreEqual('E', list.GetElementAt(5));
-
-            // Remove from baseline
-            Assert.IsTrue(list.RemoveAt(2));
-            Assert.AreEqual(5, list.GetCount());
-
-            Assert.AreEqual('A', list.GetElementAt(0));
-            Assert.AreEqual('B', list.GetElementAt(1));
-            Assert.AreEqual('C', list.GetElementAt(2));
-            Assert.AreEqual('D', list.GetElementAt(3));
-            Assert.AreEqual('E', list.GetElementAt(4));
-        }
-#endif
 
         [TestMethod]
         public void Stratabase_10000Layers ()
@@ -780,48 +661,6 @@ namespace AJut.Core.UnitTests
             Assert.IsFalse(access.IsBaselineSet);
             Assert.IsFalse(access.IsSet);
         }
-        private class TestModel : StratabaseBackedModel, IDisposable
-        {
-            private Property<DisposeTester> m_singleItem;
-            private ListProperty<DisposeTester> m_itemList;
-
-
-            public TestModel (Guid id, Stratabase sb) : base(id, sb)
-            {
-                m_singleItem = this.GenerateProperty<DisposeTester>(nameof(SingleItem));
-                m_itemList = this.GenerateListProperty<DisposeTester>("");
-            }
-
-            public DisposeTester SingleItem
-            {
-                get => m_singleItem.Value;
-                set => m_singleItem.Access.SetBaselineValue(value);
-            }
-
-            public ReadOnlyObservableCollection<DisposeTester> ItemList => m_itemList.Access.Elements;
-            public void AddToList (DisposeTester item)
-            {
-                m_itemList.Access.AddElementIntoBaseline(item);
-            }
-
-            public void Dispose ()
-            {
-                m_singleItem.Dispose();
-                m_singleItem = null;
-
-                m_itemList.Dispose();
-                m_itemList = null;
-            }
-        }
-
-        public class DisposeTester : IDisposable
-        {
-            public int DisposeCallCount { get; private set; }
-            public void Dispose ()
-            {
-                ++this.DisposeCallCount;
-            }
-        }
 
         [TestMethod]
         public void Stratabase_ClearAll ()
@@ -998,8 +837,6 @@ namespace AJut.Core.UnitTests
         [TestMethod]
         public void Stratabase_ReferenceLists_TreeTest ()
         {
-            var timer = Stopwatch.StartNew();
-
             /*      Root
              *      /|\
              *     / | \
@@ -1007,7 +844,6 @@ namespace AJut.Core.UnitTests
              *       |
              *       D
              * */
-            timer.Restart();
             TreeItem R = new TreeItem { Name = "Root" };
             TreeItem A = new TreeItem { Name = "A" };
             TreeItem B = new TreeItem { Name = "B" };
@@ -1017,41 +853,21 @@ namespace AJut.Core.UnitTests
             R.Children.Add(C);
 
             B.Children.Add(D);
-            TimeSpan setup = timer.Elapsed;
 
             Stratabase sb = new Stratabase(1);
             sb.SetBaselineFromPropertiesOf(R);
-            TimeSpan sballocs = timer.Elapsed;
 
-            timer.Restart();
             StrataTreeItem r = new StrataTreeItem(sb, R.Id);
             StrataTreeItem a = r.Children[0];
             StrataTreeItem b = r.InsertItemIntoBaseline(1, B);
             StrataTreeItem c = r.Children[2];
             StrataTreeItem d = b.Children[0];
-            TimeSpan reftree = timer.Elapsed;
-
 
             Assert.AreEqual(R.Name, r.Name);
             Assert.AreEqual(A.Name, a.Name);
             Assert.AreEqual(B.Name, b.Name);
             Assert.AreEqual(C.Name, c.Name);
             Assert.AreEqual(D.Name, d.Name);
-
-#if false // Speed test & output
-            timer.Start();
-            const int kAutomated = 100;
-            for (int i = 0; i < kAutomated; ++i)
-            {
-                c.InsertIntoBaseline(i, new TreeItem { Name = $"Automated #{i}" });
-            }
-            double followupGeneration = timer.Stop();
-
-            Console.WriteLine($"Setup took {setup * 1000} miliseconds");
-            Console.WriteLine($"Stratabase allocs took {sballocs * 1000} miliseconds");
-            Console.WriteLine($"Ref tree allocs took {reftree * 1000} miliseconds");
-            Console.WriteLine($"Followup ref generation of {kAutomated} took {followupGeneration * 1000} miliseconds");
-#endif
         }
 
         [TestMethod]

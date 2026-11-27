@@ -113,9 +113,6 @@
             end = new TestTreePart(c_a, "c.a.b");
 
             m_tree = new TreeTraverser<TestTreePart>(root);
-
-            Logger.Enable();
-            Logger.FlushMode = eLogFlushMode.FlushToDisk;
         }
 
         private static readonly string[] kBFS_Order = { "root", "a", "b", "c", "a.a", "a.b", "a.c", "c.a", "a.b.a", "a.b.b", "a.b.c", "c.a.a", "c.a.b" };
@@ -131,8 +128,8 @@
         [TestMethod]
         public void TreeTraversal_CanFindParent()
         {
-            var foundTreePart = TreeTraversal<TestTreePart>.GetFirstParentWhichPasses(root, node => node == root);
-            Assert.AreSame(root, foundTreePart);
+            var foundTreePart = TreeTraversal<TestTreePart>.GetFirstParentWhichPasses(a_b_c, node => node == root_a);
+            Assert.AreSame(root_a, foundTreePart);
         }
 
         [TestMethod]
@@ -222,10 +219,8 @@
         [TestMethod]
         public void TreeTraversal_ReverseIteration_BFS_Works()
         {
-            Logger.LogInfo("==============[ Forwards ]=======================");
             var forwards = TreeTraversal<TestTreePart>.All(root, eTraversalFlowDirection.ThroughChildren, eTraversalStrategy.BreadthFirst).Select(_ => _.Value).ToList();
 
-            Logger.LogInfo("==============[ Backwards ]=======================");
             var backwards = TreeTraversal<TestTreePart>.All(root, end, eTraversalFlowDirection.ReversedThroughChildren, eTraversalStrategy.BreadthFirst).Select(_ => _.Value).ToList();
 
 

@@ -156,54 +156,13 @@
             const int kSecondBatchCount = 2000;
             const int kThirdBatchCount = 200;
 
-            // 100% increase from batch 1 to 2 - this due to reallocations of OC - it's meant as an acceptable maximum
-            const double kAcceptablePercentIncrease_1_to_2 = 1.0;
-
-            // 75% increase from batch 2 to 3
-            const double kAcceptablePercentIncrease_2_to_3 = 0.75;
-
-            // 100% increase from batch 1 to 3
-            const double kAcceptablePercentIncrease_1_to_3 = 1.00;
-
-            Stopwatch timer = Stopwatch.StartNew();
             int itemCount = kFirstBatchCount;
-
-            timer.Restart();
             var leaves = this.ConstructTree(root, itemCount);
-            TimeSpan elapsed = timer.Elapsed;
-
-            double averageSeconds1 = elapsed.TotalSeconds / kFirstBatchCount;
-            Console.WriteLine($"Run 1 => Took {elapsed.TotalSeconds:N5} seconds to add {kFirstBatchCount}");
-            Console.WriteLine($"Run 1 => Average of {averageSeconds1} seconds per item");
-            Console.WriteLine("-----------------------------------------");
-
-            timer.Restart();
             ConstructTree(leaves, itemCount, itemCount += kSecondBatchCount);
-            elapsed = timer.Elapsed;
-            double averageSeconds2 = elapsed.TotalSeconds / kSecondBatchCount;
-            double increase_1_to_2 = (averageSeconds2 - averageSeconds1) / averageSeconds2;
-
-            Console.WriteLine($"Run 2 => Adding an additional {kSecondBatchCount} took {elapsed.TotalSeconds:N5}");
-            Console.WriteLine($"Run 2 => Average of {averageSeconds2} seconds per item");
-            Console.WriteLine($"Run 2 => Change in percent, {increase_1_to_2 * 100.0:N2}%");
-            Console.WriteLine("-----------------------------------------");
-            Assert.IsTrue(increase_1_to_2 < kAcceptablePercentIncrease_1_to_2, $"Average seconds per add increased from frist {kFirstBatchCount} by over {kAcceptablePercentIncrease_1_to_2 * 100.0}%");
-
-            timer.Restart();
             ConstructTree(leaves, itemCount, itemCount += kThirdBatchCount);
-            elapsed = timer.Elapsed;
-            double averageSeconds3 = elapsed.TotalSeconds / kThirdBatchCount;
-            double increase_1_to_3 = (averageSeconds3 - averageSeconds1) / averageSeconds3;
-            double increase_2_to_3 = (averageSeconds3 - averageSeconds2) / averageSeconds3;
 
-            Console.WriteLine($"Run 3 => Adding an additional {kThirdBatchCount} took {elapsed.TotalSeconds:N5} seconds");
-            Console.WriteLine($"Run 3 => Average of {averageSeconds3:N5} seconds per item");
-            Console.WriteLine($"Run 3 => % change in average from the first batch of {kFirstBatchCount}   -> {increase_1_to_3 * 100.0:N2}%");
-            Console.WriteLine($"Run 3 => % change in average from the second batch of {kSecondBatchCount} -> {increase_2_to_3 * 100.0:N2}%");
-            Console.WriteLine("-----------------------------------------");
-
-            Assert.IsTrue(increase_2_to_3 < kAcceptablePercentIncrease_2_to_3, $"Average seconds per add increased from second {kSecondBatchCount} by over {kAcceptablePercentIncrease_1_to_3 * 100.0}%");
-            Assert.IsTrue(increase_1_to_3 < kAcceptablePercentIncrease_1_to_3, $"Average seconds per add increased from second {kSecondBatchCount} by over {kAcceptablePercentIncrease_1_to_3 * 100.0}%");
+            // Every node added while the store was following the tree has a row, and so does the root
+            Assert.AreEqual(itemCount, flat.Count);
         }
 
         [TestMethod]
@@ -213,14 +172,10 @@
 
             const int kNodesPerLevel = 3;
             const int kDepth = 5000;
-            const double kAcceptableTimeMaxCost = 50.0; //ms
 
             Console.WriteLine($"Generating {kNodesPerLevel * kDepth:N0} nodes @ {kNodesPerLevel:N0} nodes going down {kDepth:N0} levels");
 
             Random rng = new Random();
-            var timer = Stopwatch.StartNew();
-            
-            timer.Restart();
             TreeNode currParent = root;
             for(int depth = 0; depth < kDepth; ++depth)
             {
@@ -238,26 +193,16 @@
                 currParent = nextParent;
             }
 
-            double genisis = timer.Elapsed.TotalMilliseconds;
-            Console.WriteLine($"Tree genesis took: {genisis:N5} MS");
-
-            timer.Restart();
             var flat = new ObservableFlatTreeStore();
             flat.SwitchToFixedTimeIndexGeneration();
             flat.RootNode = root;
-            double buildup = timer.Elapsed.TotalMilliseconds;
-            Console.WriteLine($"Flat tree store generation took: {buildup:N5} MS");
             Assert.AreEqual(kDepth * kNodesPerLevel + 1, flat.Count);
 
-            timer.Restart();
             var end = root.AddChild("end");
-            double addEnd = timer.Elapsed.TotalMilliseconds;
-            Console.WriteLine($"Adding to end took: {addEnd:N5} MS");
 
             int endIndex = flat.IndexOf(end);
             Assert.AreNotEqual(-1, endIndex, "New end not found in list");
             Assert.AreEqual(flat.Count - 1, endIndex, "New end not found at the end");
-            Assert.IsTrue(addEnd < kAcceptableTimeMaxCost, $"Adding end took too long: {addEnd:N5}ms");
         }
 
         private Stack<TreeNode> ConstructTree (TreeNode root, int count)

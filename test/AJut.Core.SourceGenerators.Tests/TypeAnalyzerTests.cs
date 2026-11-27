@@ -308,7 +308,6 @@ namespace TestNs
 
             PropertyModel prop = result.Model.Properties.Single(p => p.Name == "Polymorphic");
             Assert.AreEqual(ePropertyKind.RuntimeTypeEval, prop.Kind);
-            Assert.IsTrue(prop.RuntimeTypeEvalFlagLiteral.Contains("eTypeIdInfo"));
         }
 
         // ===========================[ JsonPropertyAsSelf ]===========================

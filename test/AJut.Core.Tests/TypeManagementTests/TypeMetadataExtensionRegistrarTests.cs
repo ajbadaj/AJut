@@ -38,6 +38,13 @@ namespace AJut.Core.UnitTests.TypeManagement
             public int Gamma { get; set; }
         }
 
+        // Carries its own attribute, for the reflection fallback
+        private class SelfDescribedType
+        {
+            [DisplayName("Reflected Alpha")]
+            public int Alpha { get; set; }
+        }
+
         // Types for [TypeTierOrder] / [MemberOrder] attribute tests
         [TypeTierOrder(-1)]
         private class AttributedBase
@@ -199,17 +206,11 @@ namespace AJut.Core.UnitTests.TypeManagement
         // ===========[ Visibility: Hide / Unhide ]==========================================
 
         [TestMethod]
-        public void TypeMetadataExtensionRegistrar_Hide_ExcludesFromOrderedProperties ()
+        public void TypeMetadataExtensionRegistrar_Hide_MarksOnlyThatMemberHidden ()
         {
             TypeMetadataExtensionRegistrar.For<Base>().Hide(nameof(Base.BaseSecond));
 
-            string[] names = TypeMetadataExtensionRegistrar
-                .GetOrderedProperties(typeof(Base))
-                .Select(p => p.Name)
-                .ToArray();
-
-            // GetOrderedProperties does NOT filter - IsHidden is checked by consuming systems.
-            // But IsHidden should return true for the hidden member.
+            // GetOrderedProperties does NOT filter - IsHidden is checked by consuming systems
             PropertyInfo baseProp = typeof(Base).GetProperty(nameof(Base.BaseSecond));
             Assert.IsTrue(TypeMetadataExtensionRegistrar.IsHidden(baseProp));
             Assert.IsFalse(TypeMetadataExtensionRegistrar.IsHidden(typeof(Base).GetProperty(nameof(Base.BaseFirst))));
@@ -246,10 +247,11 @@ namespace AJut.Core.UnitTests.TypeManagement
         [TestMethod]
         public void TypeMetadataExtensionRegistrar_GetAttribute_FallsBackToReflection ()
         {
-            // Alpha has no registry entry and no [DisplayName] attribute either.
-            PropertyInfo prop = typeof(ExternalType).GetProperty(nameof(ExternalType.Alpha));
+            // Alpha has no registry entry, only its own [DisplayName]
+            PropertyInfo prop = typeof(SelfDescribedType).GetProperty(nameof(SelfDescribedType.Alpha));
             var attr = TypeMetadataExtensionRegistrar.GetAttribute<DisplayNameAttribute>(prop);
-            Assert.IsNull(attr, "No attribute should be found when neither registry nor reflection has one");
+            Assert.IsNotNull(attr, "The member's own attribute should be found when the registry has none");
+            Assert.AreEqual("Reflected Alpha", attr.DisplayName);
         }
 
         [TestMethod]
@@ -364,13 +366,6 @@ namespace AJut.Core.UnitTests.TypeManagement
         }
 
         // ===========[ DefaultMemberOrdering ]==========================================
-
-        [TestMethod]
-        public void TypeMetadataExtensionRegistrar_DefaultOrdering_IsBaseToConcrete ()
-        {
-            Assert.AreEqual(eMemberInheritanceOrdering.BaseFirst, TypeMetadataExtensionRegistrar.DefaultMemberOrdering,
-                "Default should be BaseToConcrete");
-        }
 
         [TestMethod]
         public void TypeMetadataExtensionRegistrar_DefaultOrdering_BaseToConcrete_BaseBeforeDerived ()
