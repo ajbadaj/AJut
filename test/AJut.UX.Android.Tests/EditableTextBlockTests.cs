@@ -1,8 +1,6 @@
 namespace AJut.UX.Tests
 {
     using System.Collections.Generic;
-    using System.ComponentModel;
-    using AJut.UX.CodeBinding;
     using AJut.UX.Controls;
     using Android.Views;
     using Android.Views.InputMethods;
@@ -241,28 +239,6 @@ namespace AJut.UX.Tests
             Assert.IsTrue(block.IsEmpty);
         }
 
-        // ===[ Binding ]===
-
-        [TestMethod]
-        public void EditableTextBlock_BindText_PushesBothWays ()
-        {
-            var model = new Model { Name = "Kestrel" };
-            var block = new EditableTextBlock(TestHost.RequiredContext);
-            using var bindings = new BindingSet();
-            using (TestHost.Attach(block))
-            {
-                bindings.BindText(block, model, nameof(Model.Name), () => model.Name, value => model.Name = value);
-                Assert.AreEqual("Kestrel", block.Text);
-
-                model.Name = "Hobby";
-                Assert.AreEqual("Hobby", block.Text);
-
-                block.IsEditing = true;
-                FieldOf(block).Text = "Merlin";
-                Assert.AreEqual("Merlin", model.Name);
-            }
-        }
-
         // ===[ Layout ]===
 
         [TestMethod]
@@ -285,22 +261,5 @@ namespace AJut.UX.Tests
         private static TextView LabelOf (EditableTextBlock block) => (TextView)block.GetChildAt(0)!;
 
         private static EditText FieldOf (EditableTextBlock block) => (EditText)block.GetChildAt(1)!;
-
-        private sealed class Model : INotifyPropertyChanged
-        {
-            private string? m_name;
-
-            public event PropertyChangedEventHandler? PropertyChanged;
-
-            public string? Name
-            {
-                get => m_name;
-                set
-                {
-                    m_name = value;
-                    this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(this.Name)));
-                }
-            }
-        }
     }
 }

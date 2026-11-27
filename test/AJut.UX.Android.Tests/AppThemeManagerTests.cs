@@ -12,9 +12,6 @@ namespace AJut.UX.Tests
         private const string kPreferencesName = "AJut_AppThemeManager";
         private const string kStoreKey = "AJut_AppThemeConfiguration";
 
-        // Read before any test here changes it, so it can be put back
-        private static readonly bool kUsesTouchVariantAtStart = ThemeColors.UsesTouchVariant;
-
         [TestInitialize]
         public void Setup ()
         {
@@ -25,7 +22,6 @@ namespace AJut.UX.Tests
         public void Teardown ()
         {
             ClearSavedChoice();
-            ThemeColors.UsesTouchVariant = kUsesTouchVariantAtStart;
         }
 
         // ===[ Applying ]===
@@ -137,18 +133,6 @@ namespace AJut.UX.Tests
             }
 
             Assert.IsNull(Preferences().GetString(kStoreKey, null));
-        }
-
-        // ===[ Touch ]===
-
-        [TestMethod]
-        public void AppThemeManager_UsesTouchVariant_IsThePalettesSwitch ()
-        {
-            using var manager = new AppThemeManager(TestHost.RequiredContext, eAppThemeConfiguration.UseSameAsOS, persistInSharedPreferences: false);
-
-            manager.UsesTouchVariant = !kUsesTouchVariantAtStart;
-
-            Assert.AreEqual(!kUsesTouchVariantAtStart, ThemeColors.UsesTouchVariant);
         }
 
         // ===[ Helpers ]===

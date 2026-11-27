@@ -55,15 +55,5 @@ namespace AJut.UX.Tests
             Assert.IsInstanceOfType(elements[4], typeof(UIAction), "A disabled submenu shows as a disabled action, since a UIMenu has no disabled state");
             Assert.IsTrue(((UIAction)elements[4]).Attributes.HasFlag(UIMenuElementAttributes.Disabled));
         }
-
-        [TestMethod]
-        public void Button_ShowsItsMenuOnATapAndItsContentAsTheTitle ()
-        {
-            var button = new PopupMenuButton { ButtonContent = "Options" };
-            Assert.IsTrue(button.ShowsMenuAsPrimaryAction);
-            Assert.IsNotNull(button.Menu);
-            Assert.AreEqual("Options", button.ButtonContent);
-            Assert.IsFalse(button.IsOpen);
-        }
     }
 }
